@@ -68,6 +68,7 @@ private val folderArtworkMimeTypes = setOf(
 )
 
 class LocalMediaDocumentBrowser(private val context: Context) {
+    private val exclusionStore = LocalMediaExclusionStore(context)
     fun roots(rootUris: Set<String>): List<LocalMediaDocumentEntry> = rootUris.map { rootUri ->
         val document = runCatching {
             DocumentFile.fromTreeUri(context, Uri.parse(rootUri))
@@ -95,6 +96,7 @@ class LocalMediaDocumentBrowser(private val context: Context) {
         return children
             .filter { it.isDirectory || isSupportedMedia(it.name.orEmpty(), it.type) }
             .map { document -> document.toEntry(location, folderArtworkUri) }
+            .filterNot(exclusionStore::isDocumentEntryExcluded)
             .sortedWith(entryComparator)
     }
 
@@ -103,12 +105,12 @@ class LocalMediaDocumentBrowser(private val context: Context) {
         maximumItems: Int = MAXIMUM_GROUP_ITEMS
     ): List<LocalMediaItem> {
         val root = resolve(location) ?: return emptyList()
-        val pending = ArrayDeque<Pair<DocumentFile, String>>()
+        val pending = ArrayDeque<Triple<DocumentFile, String, LocalMediaDocumentLocation>>()
         val visited = mutableSetOf<String>()
         val result = mutableListOf<LocalMediaItem>()
-        pending.add(root to root.name.orEmpty())
+        pending.add(Triple(root, root.name.orEmpty(), location))
         while (pending.isNotEmpty() && result.size < maximumItems) {
-            val (directory, folder) = pending.removeFirst()
+            val (directory, folder, currentLocation) = pending.removeFirst()
             if (!visited.add(directory.uri.toString())) continue
             val children = runCatching { directory.listFiles() }.getOrDefault(emptyArray())
             val folderArtworkUri = chooseLocalFolderArtwork(
@@ -116,11 +118,25 @@ class LocalMediaDocumentBrowser(private val context: Context) {
             )
             children.forEach { document ->
                 if (result.size >= maximumItems) return@forEach
+                val displayName = document.name.orEmpty().ifBlank {
+                    document.uri.lastPathSegment.orEmpty()
+                }
+                val childLocation = currentLocation.copy(
+                    path = currentLocation.path + displayName
+                )
                 when {
-                    document.isDirectory -> pending.add(document to document.name.orEmpty())
+                    document.isDirectory &&
+                        !exclusionStore.isDocumentLocationExcluded(childLocation) -> {
+                        pending.add(
+                            Triple(document, document.name.orEmpty(), childLocation)
+                        )
+                    }
 
                     isSupportedMedia(document.name.orEmpty(), document.type) -> {
-                        result += document.toMediaItem(folder, folderArtworkUri)
+                        val item = document.toMediaItem(folder, folderArtworkUri)
+                        if (!exclusionStore.isExcluded(item)) {
+                            result += item
+                        }
                     }
                 }
             }
