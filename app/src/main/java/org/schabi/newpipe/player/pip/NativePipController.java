@@ -121,6 +121,27 @@ public final class NativePipController {
         }
     }
 
+    /**
+     * Prepares the player as soon as Android starts the PiP transition.
+     *
+     * <p>Android 12+ dispatches this before the activity has fully entered PiP. Moving the
+     * fullscreen/bottom-sheet preparation here prevents those layout changes from happening
+     * halfway through the system PiP animation. The regular mode-changed callback remains an
+     * idempotent fallback for older devices and vendor implementations.</p>
+     *
+     * @param transitioningToPip whether Android is currently starting a PiP transition
+     */
+    public void onPictureInPictureUiStateChanged(final boolean transitioningToPip) {
+        if (!shouldPrepareForPipTransition(transitioningToPip)) {
+            return;
+        }
+        currentFragment().ifPresent(VideoDetailFragment::prepareNativePipEntry);
+    }
+
+    static boolean shouldPrepareForPipTransition(final boolean transitioningToPip) {
+        return transitioningToPip;
+    }
+
     public void onPictureInPictureModeChanged(final boolean inPictureInPictureMode) {
         currentFragment().ifPresent(fragment ->
                 fragment.onNativePipModeChanged(inPictureInPictureMode));
