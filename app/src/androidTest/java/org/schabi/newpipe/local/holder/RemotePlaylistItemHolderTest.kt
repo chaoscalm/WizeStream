@@ -11,8 +11,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.schabi.newpipe.R
+import org.schabi.newpipe.database.LocalItem
 import org.schabi.newpipe.database.playlist.model.PlaylistRemoteEntity
 import org.schabi.newpipe.local.LocalItemBuilder
+import org.schabi.newpipe.util.OnClickGesture
 
 @RunWith(AndroidJUnit4::class)
 class RemotePlaylistItemHolderTest {
@@ -43,6 +45,36 @@ class RemotePlaylistItemHolderTest {
 
             assertEquals(View.VISIBLE, holder.itemStreamCountView.visibility)
             assertTrue(holder.itemStreamCountView.text.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun gridChildLongPressDispatchesHeldAction() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val context = ContextThemeWrapper(instrumentation.targetContext, R.style.LightTheme)
+            var heldItem: LocalItem? = null
+            val builder = LocalItemBuilder(context)
+            builder.setOnItemSelectedListener(object : OnClickGesture<LocalItem> {
+                override fun selected(selectedItem: LocalItem) = Unit
+
+                override fun held(selectedItem: LocalItem) {
+                    heldItem = selectedItem
+                }
+            })
+            val holder = RemoteBookmarkPlaylistItemHolder(
+                builder,
+                R.layout.list_playlist_grid_item,
+                FrameLayout(context)
+            )
+            val playlist = remotePlaylist(streamCount = 42)
+            holder.updateFromItem(playlist, null, DateTimeFormatter.ISO_LOCAL_DATE)
+
+            assertTrue(
+                holder.itemView.findViewById<View>(R.id.itemThumbnailContainer)
+                    .performLongClick()
+            )
+            assertEquals(playlist, heldItem)
         }
     }
 
