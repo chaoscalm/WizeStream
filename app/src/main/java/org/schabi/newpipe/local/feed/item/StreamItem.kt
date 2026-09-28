@@ -24,6 +24,7 @@ import org.schabi.newpipe.extractor.stream.StreamType.VIDEO_STREAM
 import org.schabi.newpipe.info_list.StreamUploaderNavigation
 import org.schabi.newpipe.util.GridTitleDisplayPolicy
 import org.schabi.newpipe.util.Localization
+import org.schabi.newpipe.util.ShortsThumbnailPolicy
 import org.schabi.newpipe.util.StreamTypeUtil
 import org.schabi.newpipe.util.image.CoilHelper
 
@@ -120,6 +121,10 @@ data class StreamItem(
 
         updateDurationMarginForProgress(viewBinding)
 
+        viewBinding.itemThumbnailView.scaleType = ShortsThumbnailPolicy.scaleType(
+            stream.url,
+            stream.duration
+        )
         CoilHelper.loadThumbnail(viewBinding.itemThumbnailView, stream.thumbnailUrl)
 
         if (itemVersion != ItemVersion.MINI) {
