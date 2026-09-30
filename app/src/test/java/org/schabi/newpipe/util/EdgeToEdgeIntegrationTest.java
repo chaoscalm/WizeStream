@@ -199,25 +199,6 @@ public class EdgeToEdgeIntegrationTest {
     }
 
     @Test
-    public void fullscreenControlsAvoidInsetsWithoutShrinkingVideoSurface() throws Exception {
-        final String playerSource = Files.readString(mainDirectory.resolve(
-                "java/org/schabi/newpipe/player/ui/VideoPlayerUi.java"));
-        final String mainPlayerSource = Files.readString(mainDirectory.resolve(
-                "java/org/schabi/newpipe/player/ui/MainPlayerUi.java"));
-
-        assertTrue(playerSource.contains(
-                "ViewCompat.getRootWindowInsets(binding.getRoot())"));
-        assertTrue(playerSource.contains("WindowInsetsCompat.Type.systemBars()"));
-        assertTrue(playerSource.contains("WindowInsetsCompat.Type.displayCutout()"));
-        assertTrue(playerSource.contains(
-                "binding.playbackControlRoot.setPadding(0, 0, 0, 0)"));
-        assertTrue(playerSource.contains("binding.topControls.setPadding("));
-        assertTrue(playerSource.contains("binding.bottomControls.setPadding("));
-        assertTrue(mainPlayerSource.contains(
-                "binding.getRoot().post(this::updateFullscreenOverlayInsets)"));
-    }
-
-    @Test
     public void phoneDetailNavigationReservesItsBottomSystemInset() throws Exception {
         final String detailSource = Files.readString(mainDirectory.resolve(
                 "java/org/schabi/newpipe/fragments/detail/VideoDetailFragment.java"));

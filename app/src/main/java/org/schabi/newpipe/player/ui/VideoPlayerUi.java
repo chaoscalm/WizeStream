@@ -117,6 +117,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
     //////////////////////////////////////////////////////////////////////////*/
 
     protected PlayerBinding binding;
+    private final BottomPlayerControls bottomPlayerControls;
     private final PlayerUiTheme playerUiTheme;
     private final DanmakuController danmakuController;
     private final Handler controlsVisibilityHandler = new Handler(Looper.getMainLooper());
@@ -171,6 +172,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
                             @NonNull final PlayerBinding playerBinding) {
         super(player);
         binding = playerBinding;
+        bottomPlayerControls = new BottomPlayerControls(binding);
         playerUiTheme = new PlayerUiTheme(context, binding.playbackSeekBar);
         danmakuController = new DanmakuController(player, binding);
         setupFromView();
@@ -446,6 +448,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
         clearScaledEndScreenThumbnail();
         deinitPlayerSeekOverlay();
         deinitListeners();
+        bottomPlayerControls.restore();
     }
 
     protected void setupElementsVisibility() {
@@ -475,30 +478,9 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
     }
 
     protected final void updateFullscreenOverlayInsets() {
-        Insets systemBarInsets = Insets.NONE;
-        Insets displayCutoutInsets = Insets.NONE;
-        final WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(binding.getRoot());
-        if (rootInsets != null) {
-            systemBarInsets = rootInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-            displayCutoutInsets = rootInsets.getInsets(
-                    WindowInsetsCompat.Type.displayCutout());
-        }
-
         binding.playbackControlRoot.setPadding(0, 0, 0, 0);
-        final int leftPadding = calculateControlsEdgePadding(
-                isFullscreen(), controlsBasePadding,
-                systemBarInsets.left, displayCutoutInsets.left);
-        final int topPadding = calculateTopControlsPadding(
-                isFullscreen(), topControlsBasePadding,
-                systemBarInsets.top, displayCutoutInsets.top);
-        final int rightPadding = calculateControlsEdgePadding(
-                isFullscreen(), controlsBasePadding,
-                systemBarInsets.right, displayCutoutInsets.right);
-        final int bottomPadding = calculateControlsEdgePadding(
-                isFullscreen(), 0, systemBarInsets.bottom, displayCutoutInsets.bottom);
-
-        binding.topControls.setPadding(leftPadding, topPadding, rightPadding, 0);
-        binding.bottomControls.setPadding(leftPadding, 0, rightPadding, bottomPadding);
+        bottomPlayerControls.applyWindowInsets(isFullscreen(),
+                controlsBasePadding, topControlsBasePadding);
     }
 
     static int calculateTopControlsPadding(final boolean fullscreen,
@@ -789,6 +771,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
     }
 
     public void showControlsThenHide() {
+        updateFullscreenOverlayInsets();
         applyPlayerSeekBarColor();
         if (DEBUG) {
             Log.d(TAG, "showControlsThenHide() called");
@@ -807,6 +790,7 @@ public abstract class VideoPlayerUi extends PlayerUi implements SeekBar.OnSeekBa
     }
 
     public void showControls(final long duration) {
+        updateFullscreenOverlayInsets();
         applyPlayerSeekBarColor();
         if (DEBUG) {
             Log.d(TAG, "showControls() called");
