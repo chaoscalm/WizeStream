@@ -1,12 +1,12 @@
 package org.schabi.newpipe.player.helper;
 
-import android.net.Uri;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import androidx.media3.common.C;
 import androidx.media3.exoplayer.dash.manifest.DashManifest;
 import androidx.media3.exoplayer.dash.manifest.DashManifestParser;
+import androidx.media3.exoplayer.dash.manifest.Location;
 import androidx.media3.exoplayer.dash.manifest.Period;
 import androidx.media3.exoplayer.dash.manifest.ProgramInformation;
 import androidx.media3.exoplayer.dash.manifest.ServiceDescriptionElement;
@@ -48,11 +48,15 @@ public class YoutubeDashLiveManifestParser extends DashManifestParser {
             @Nullable final ProgramInformation programInformation,
             @Nullable final UtcTimingElement utcTiming,
             @Nullable final ServiceDescriptionElement serviceDescription,
-            @Nullable final Uri location,
-            @NonNull final List<Period> periods) {
+            @NonNull final List<Period> periods,
+            @NonNull final List<Location> locations) {
         return super.buildMediaPresentationDescription(
                 AVAILABILITY_START_TIME_TO_USE,
-                durationMs,
+                // A dynamic YouTube MPD may describe the current DVR snapshot with a finite
+                // duration. Treating it as the end of the broadcast stops playback at that edge
+                // even though later manifest refreshes contain more segments. Static archives
+                // keep their declared duration.
+                dynamic ? C.TIME_UNSET : durationMs,
                 minBufferTimeMs,
                 dynamic,
                 minUpdateTimeMs,
@@ -62,7 +66,7 @@ public class YoutubeDashLiveManifestParser extends DashManifestParser {
                 programInformation,
                 utcTiming,
                 serviceDescription,
-                location,
-                periods);
+                periods,
+                locations);
     }
 }
